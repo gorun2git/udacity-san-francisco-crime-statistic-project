@@ -5,8 +5,9 @@ from pyspark.sql import SparkSession
 from pyspark.sql.types import *
 import pyspark.sql.functions as psf
 
+import utils
+import config
 
-# TODO Create a schema for incoming resources
 schema = StructType([StructField("crime_id", StringType(), True),
                      StructField("original_crime_type_name", StringType(), True),
                      StructField("report_date", StringType(), True),
@@ -23,16 +24,17 @@ schema = StructType([StructField("crime_id", StringType(), True),
                      StructField("common_location", StringType(), True)
                      ])
 
+
 def run_spark_job(spark):
 
-    # TODO Create Spark Configuration
     # Create Spark configurations with max offset of 200 per trigger
     # set up correct bootstrap server and port
+    topic_name = utils.get_topic_name(config.INPUT_FILE_NAME)
     df = spark \
         .readStream \
         .format("kafka") \
-        .option("kafka.bootstrap.servers", "localhost:9092") \
-        .option("subscribe", "police.department.calls.for.service.topic") \
+        .option("kafka.bootstrap.servers", config.BOOTSTRAP_SERVERS) \
+        .option("subscribe", topic_name) \
         .option("startingOffsets", "earliest") \
         .option("maxRatePerPartition", 100) \
         .option("maxOffsetsPerTrigger", 100) \
@@ -41,7 +43,6 @@ def run_spark_job(spark):
     # Show schema for the incoming resources for checks
     df.printSchema()
 
-    # TODO extract the correct column from the kafka input resources
     # Take only value and convert it to String
     kafka_df = df.selectExpr("CAST(value AS STRING)")
 
@@ -49,7 +50,6 @@ def run_spark_job(spark):
         .select(psf.from_json(psf.col('value'), schema).alias("SERVICE_DF"))\
         .select("SERVICE_DF.*")
 
-    # TODO select original_crime_type_name and disposition
     distinct_table = service_table \
         .select(  # psf.col("crime_id"),
             psf.to_timestamp(psf.col("call_date_time")).alias("call_date_time"),
@@ -75,8 +75,6 @@ def run_spark_job(spark):
             .format("console") \
             .start()
 
-
-    # TODO attach a ProgressReporter
     query.awaitTermination()
 
     # TODO get the right radio code json path
@@ -103,8 +101,6 @@ def run_spark_job(spark):
 
 if __name__ == "__main__":
     logger = logging.getLogger(__name__)
-
-    # TODO Create Spark in Standalone mode
     spark = SparkSession \
         .builder \
         .master("local[*]") \
