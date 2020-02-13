@@ -20,5 +20,6 @@ def prepare_input_file(file_name):
 
     return output_file
 
+
 def dict_to_binary(json_dict):
     return json.dumps(json_dict).encode('UTF-8')

@@ -1,5 +1,4 @@
 import logging
-import json
 from pathlib import Path
 from pyspark.sql import SparkSession
 from pyspark.sql.types import *
@@ -38,6 +37,7 @@ def run_spark_job(spark):
         .option("startingOffsets", "earliest") \
         .option("maxRatePerPartition", 100) \
         .option("maxOffsetsPerTrigger", 100) \
+        .option("stopGracefullyOnShutdown", "true") \
         .load()
 
     # Show schema for the incoming resources for checks
@@ -67,28 +67,23 @@ def run_spark_job(spark):
                  psf.col("original_crime_type_name")
                 ).count()
 
-    # TODO Q1. Submit a screen shot of a batch ingestion of the aggregation
-    # TODO write output stream
     query = agg_df \
             .writeStream \
-            .outputMode("append") \
+            .outputMode("Complete") \
             .format("console") \
+            .option("truncate", "false") \
             .start()
 
     query.awaitTermination()
 
-    # TODO get the right radio code json path
     radio_code_json_filepath = f"{Path(__file__).parents[0]}/radio_code.json"
     radio_code_df = spark.read.json(radio_code_json_filepath)
 
     # clean up your data so that the column names match on radio_code_df and agg_df
     # we will want to join on the disposition code
 
-    # TODO rename disposition_code column to disposition
     radio_code_df = radio_code_df.withColumnRenamed("disposition_code", "disposition")
 
-    # TODO join on disposition column
-    # Check this!!!! join_query = agg_df.join(radio_code_df, agg_df.disposition == radio_code_df.disposition)
     join_query = agg_df \
         .join(radio_code_df, "disposition") \
         .writeStream \
@@ -104,6 +99,7 @@ if __name__ == "__main__":
     spark = SparkSession \
         .builder \
         .master("local[*]") \
+        .config("spark.ui.port", 3000) \
         .appName("KafkaSparkStructuredStreaming") \
         .getOrCreate()
 
