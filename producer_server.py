@@ -1,6 +1,7 @@
 from kafka import KafkaProducer
 import json
 import time
+import utils
 
 
 class ProducerServer(KafkaProducer):
@@ -10,16 +11,11 @@ class ProducerServer(KafkaProducer):
         self.input_file = input_file
         self.topic = topic
 
-    #TODO we're generating a dummy data
     def generate_data(self):
         with open(self.input_file) as f:
-            for line in f:
-                message = self.dict_to_binary(line)
-                # TODO send the correct data
-                self.send()
+            input_data = json.loads(f.read())
+            for d in input_data:
+                message = utils.dict_to_binary(d)
+                self.send(self.topic, message)
                 time.sleep(1)
 
-    # TODO fill this in to return the json dictionary to binary
-    def dict_to_binary(self, json_dict):
-        return 
-        
