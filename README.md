@@ -46,4 +46,13 @@ spark-submit --packages org.apache.spark:spark-sql-kafka-0-10_2.11:2.3.4 --maste
 * Take a screenshot of the Spark Streaming UI as the streaming continues
 ### Step 3
 1. How did changing values on the SparkSession property parameters affect the throughput and latency of the data?
+* First of all, I think our goal is to keep throughput as high and latency as
+low as we can. For sure one of the ways is to monitor parameters such as processedRowsPerSecond to act
+on a proper way. The another way is to try to optimize our code (aggregations, chose right watermark period,..).
+In my case I tried to play with parameters like spark.default.parallelism and spark.streaming.kafka.maxRatePerPartition to get 
+better performance. As a result, my code was faster.
 1. What were the 2-3 most efficient SparkSession property key/value pairs? Through testing multiple variations on values, how can you tell these were the most optimal?
+* As I mentioned in first question there are two property parameters: spark.default.parallelism and 
+spark.streaming.kafka.maxRatePerPartition. Beside the two I could mention
+also spark.sql.shuffle.partitions. At the moment I can tell that these 
+were right choice for the environment and settings I had on Udacity workspace. 

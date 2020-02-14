@@ -61,19 +61,19 @@ def run_spark_job(spark):
     
     distinct_table = service_table \
         .select(
-        udf_to_timestamp(psf.col("call_date_time")).alias("call_date_time"),
-        psf.col("original_crime_type_name"),
-        psf.col("disposition")
+            udf_to_timestamp(psf.col("call_date_time")).alias("call_date_time"),
+            psf.col("original_crime_type_name"),
+            psf.col("disposition")
     ).distinct()
     
     # count the number of original crime type
     agg_df = distinct_table \
         .withWatermark("call_date_time", "60 minutes") \
         .groupBy(
-        psf.window(psf.col("call_date_time"), "60 minutes", "10 minutes"),
-        psf.col("original_crime_type_name"),
-        psf.col("disposition")
-    ) \
+            psf.window(psf.col("call_date_time"), "60 minutes", "10 minutes"),
+            psf.col("original_crime_type_name"),
+            psf.col("disposition")
+        ) \
         .count() \
         .orderBy("count", ascending=False)
     
@@ -100,7 +100,7 @@ def run_spark_job(spark):
     radio_code_df = radio_code_df.withColumnRenamed("disposition_code", "disposition")
     
     join_query = agg_df \
-        .join(radio_code_df, "disposition", "left") \
+        .join(radio_code_df, "disposition") \
         .writeStream \
         .format("console") \
         .outputMode("complete") \
